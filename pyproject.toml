@@ -1,0 +1,23 @@
+[project]
+name = "titanic-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Yann OPENDA", email = "opendayann@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "joblib>=1.6.0",
+    "numpy>=2.5.4",
+    "pandas>=3.1.0",
+    "requests>=2.34.2",
+    "streamlit>=1.66.1",
+]
+
+[project.scripts]
+titanic-project = "titanic_project:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
