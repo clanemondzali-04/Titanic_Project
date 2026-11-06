@@ -3,8 +3,6 @@ from src.predict import save_model
 from src.data import split_data
 from src.predict import load_model, predict_passenger
 import joblib
-from src.predict import save_model
-
 
 def test_split_total_891_lignes():
     X_train, X_test, y_train, y_test = split_data()
@@ -24,8 +22,13 @@ def test_predict_passenger_probabilite():
     result = predict_passenger(load_model(), passenger)
     assert 0 <= result["probability"] <= 1
     assert isinstance(result["survived"], bool)
-def test_sauvegarde_rechargement_predictions_identiques(tmp_path):
+
+def test_sauvegarde_rechargement_predictions_identiques(tmp_path, monkeypatch):
     model = load_model()
+
+    # Créer un chemin temporaire pour ne pas toucher au vrai modèle
+    chemin_temporaire = tmp_path / "modele_test.joblib"
+    monkeypatch.setattr(config, "MODEL_PATH", chemin_temporaire)
 
     passenger = {
         "pclass": 3,
@@ -39,15 +42,13 @@ def test_sauvegarde_rechargement_predictions_identiques(tmp_path):
 
     prediction_avant = predict_passenger(model, passenger)
 
-    chemin_temporaire = tmp_path / "modele_test.joblib"
-    joblib.dump(model, chemin_temporaire)
-
-    modele_recharge = joblib.load(chemin_temporaire)
+    # Utiliser nos fonctions de sauvegarde et de chargement
+    save_model(model)
+    modele_recharge = load_model()
 
     prediction_apres = predict_passenger(modele_recharge, passenger)
 
     assert prediction_avant == prediction_apres
-
 
 def test_sauvegarde_rechargement_predictions_identiques(tmp_path, monkeypatch):
     # Charger le modèle original
