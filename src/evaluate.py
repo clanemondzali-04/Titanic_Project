@@ -1,8 +1,6 @@
 """Évaluation du modèle."""
 import json
-import joblib
 import matplotlib.pyplot as plt
-from pathlib import Path
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -14,22 +12,16 @@ from sklearn.metrics import (
     RocCurveDisplay,
     classification_report
 )
+from src import config
 from src.data import split_data
+from src.predict import load_model
 
 # 1. Chemins
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Chemins centralisés dans config.py
+REPORTS_DIR = config.REPORTS_DIR
 
-MODEL_PATH = BASE_DIR / "models" / "titanic_model.joblib"
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-RESULTS_DIR = BASE_DIR / "results"
-
-# Vérification de l'existence du modèle
-if not MODEL_PATH.exists():
-    raise FileNotFoundError(
-        f"Modèle introuvable : {MODEL_PATH}"
-    )
-
-RESULTS_DIR.mkdir(exist_ok=True)
 
 # 2. Fonction d'évaluation
 
@@ -82,7 +74,7 @@ def evaluate(model, X_test, y_test, model_name="Titanic"):
 
     # Sauvegarde JSON
     with open(
-        RESULTS_DIR / "metrics.json",
+        REPORTS_DIR / "metrics.json",
         "w",
         encoding="utf-8"
     ) as file:
@@ -106,10 +98,13 @@ def evaluate(model, X_test, y_test, model_name="Titanic"):
 
     plt.tight_layout()
 
+    
     plt.savefig(
-       RESULTS_DIR / f"confusion_matrix_{model_name}.png",
-        dpi=300
-    )
+    REPORTS_DIR / f"confusion_matrix_{model_name}.png",
+    dpi=300
+),
+    dpi=300
+    
 
     plt.close()
 
@@ -119,14 +114,14 @@ def evaluate(model, X_test, y_test, model_name="Titanic"):
         y_proba
     )
 
-    plt.title("ROC Curve - Titanic")
+    plt.title(f"ROC Curve - {model_name}")
 
     plt.tight_layout()
 
     plt.savefig(
-        RESULTS_DIR / f"roc_curve_{model_name}.png",
-        dpi=300
-    )
+    REPORTS_DIR / f"roc_curve_{model_name}.png",
+    dpi=300
+)
 
     plt.close()
 
@@ -157,20 +152,26 @@ def compare_scores(cv_accuracy, test_accuracy):
 
 
 # 3. Exécution
-
 if __name__ == "__main__":
 
     print("\n- MODEL EVALUATION -")
+
+    # Vérification du modèle
+    if not config.MODEL_PATH.exists():
+        raise FileNotFoundError(
+            f"Modèle introuvable : {config.MODEL_PATH}"
+        )
 
     # Chargement des données
     X_train, X_test, y_train, y_test = split_data()
 
     print("Test data loaded:", X_test.shape)
 
-    # Chargement du modèle
-    model = joblib.load(MODEL_PATH)
+    # Chargement du modèle retenu par l'équipe
+    model = load_model()
 
-    print("Model loaded successfully!")
+    print("Decision Tree model loaded successfully!")
+    
    # Évaluation
     results = evaluate(
         model,
@@ -197,10 +198,10 @@ if __name__ == "__main__":
         )
     )
 
-    print("\nResults saved in:", RESULTS_DIR)
+    print("\nResults saved in:", REPORTS_DIR)
     
     # Comparaison CV / Test
     compare_scores(
-            cv_accuracy=0.796,
-            test_accuracy=results["accuracy"]
-        )
+    cv_accuracy=0.803,
+    test_accuracy=results["accuracy"]
+)
