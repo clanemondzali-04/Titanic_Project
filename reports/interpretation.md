@@ -54,13 +54,6 @@ Cette métrique complète l'Accuracy en permettant d'évaluer la capacité du mo
 
 ## 3. Analyse de la matrice de confusion
 
-La matrice de confusion obtenue est la suivante :
-
-| Classe réelle | Prédit décédé | Prédit survivant |
-|---|---:|---:|
-| Décédé | 97 | 13 |
-| Survivant | 29 | 40 |
-
 Les résultats montrent que :
 
 - 97 passagers décédés ont été correctement classés.
