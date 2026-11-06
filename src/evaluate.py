@@ -1,7 +1,207 @@
 """Évaluation du modèle."""
-from sklearn.metrics import accuracy_score
+import json
+import matplotlib.pyplot as plt
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    RocCurveDisplay,
+    classification_report
+)
+from src import config
+from src.data import split_data
+from src.predict import load_model
+
+# 1. Chemins
+# Chemins centralisés dans config.py
+REPORTS_DIR = config.REPORTS_DIR
+
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def evaluate(model, X_test, y_test):
-    """Renvoie un dictionnaire avec seulement l'accuracy."""
-    return {"accuracy": accuracy_score(y_test, model.predict(X_test))}
+# 2. Fonction d'évaluation
+
+def evaluate(model, X_test, y_test, model_name="Titanic"):
+
+    """Calcule les métriques de performance."""
+
+    # Prédictions
+    y_pred = model.predict(X_test)
+
+    # Probabilités de prédiction
+    y_proba = model.predict_proba(X_test)[:, 1]
+
+    # Calcul des métriques
+    accuracy = accuracy_score(y_test, y_pred)
+
+    precision = precision_score(
+        y_test, y_pred, zero_division=0
+    )
+
+    recall = recall_score(
+        y_test, y_pred, zero_division=0
+    )
+
+    f1 = f1_score(
+        y_test, y_pred, zero_division=0
+    )
+
+    roc_auc = roc_auc_score(y_test, y_proba)
+
+    # Matrice de confusion
+    cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
+
+    tn, fp, fn, tp = cm.ravel()
+
+    # Résultats
+    metrics = {"model": model_name,
+        "accuracy": float(accuracy),
+        "precision": float(precision),
+        "recall": float(recall),
+        "f1_score": float(f1),
+        "roc_auc": float(roc_auc),
+        "confusion_matrix": {
+            "TN": int(tn),
+            "FP": int(fp),
+            "FN": int(fn),
+            "TP": int(tp)
+        }
+    }
+
+    # Sauvegarde JSON
+    with open(
+        REPORTS_DIR / "metrics.json",
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            metrics,
+            file,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+    # Affichage de la matrice
+    disp = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=["Died", "Survived"]
+    )
+
+    disp.plot(cmap="Blues", values_format="d")
+
+    plt.title(f"Confusion Matrix - {model_name}")
+
+    plt.tight_layout()
+
+    
+    plt.savefig(
+    REPORTS_DIR / f"confusion_matrix_{model_name}.png",
+    dpi=300
+),
+    dpi=300
+    
+
+    plt.close()
+
+    # Courbe ROC
+    RocCurveDisplay.from_predictions(
+        y_test,
+        y_proba
+    )
+
+    plt.title(f"ROC Curve - {model_name}")
+
+    plt.tight_layout()
+
+    plt.savefig(
+    REPORTS_DIR / f"roc_curve_{model_name}.png",
+    dpi=300
+)
+
+    plt.close()
+
+    return metrics
+
+
+#Compare le score de validation croisée et le score de test
+def compare_scores(cv_accuracy, test_accuracy):
+
+    ecart = abs(cv_accuracy - test_accuracy)
+    
+    print("\n= CV VS TEST =")
+
+    print(f"CV Accuracy   : {cv_accuracy * 100:.2f}%")
+    print(f"Test Accuracy : {test_accuracy * 100:.2f}%")
+    print(f"Écart         : {ecart * 100:.2f}%")
+
+    if ecart < 0.02:
+        print("Interpretation : Très bonne stabilité.")
+
+    elif ecart < 0.05:
+        print("Interpretation : Stabilité acceptable.")
+
+    else:
+        print("Interpretation : Écart important à examiner.")
+
+    
+
+
+# 3. Exécution
+if __name__ == "__main__":
+
+    print("\n- MODEL EVALUATION -")
+
+    # Vérification du modèle
+    if not config.MODEL_PATH.exists():
+        raise FileNotFoundError(
+            f"Modèle introuvable : {config.MODEL_PATH}"
+        )
+
+    # Chargement des données
+    X_train, X_test, y_train, y_test = split_data()
+
+    print("Test data loaded:", X_test.shape)
+
+    # Chargement du modèle retenu par l'équipe
+    model = load_model()
+
+    print("Decision Tree model loaded successfully!")
+    
+   # Évaluation
+    results = evaluate(
+        model,
+        X_test,
+        y_test
+    )
+
+    # Affichage
+    print("\n- RESULTS -")
+
+    for name, value in results.items():
+        if isinstance(value, float):
+            print(f"{name}: {value:.2f}")
+        else:
+            print(f"{name}: {value}")
+
+    print("\n- CLASSIFICATION REPORT -")
+
+    print(
+        classification_report(
+            y_test,
+            model.predict(X_test),
+            target_names=["Died", "Survived"]
+        )
+    )
+
+    print("\nResults saved in:", REPORTS_DIR)
+    
+    # Comparaison CV / Test
+    compare_scores(
+    cv_accuracy=0.803,
+    test_accuracy=results["accuracy"]
+)
