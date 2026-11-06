@@ -1,1 +1,53 @@
-# Titanic Project
+# Titanic_Project
+
+Projet de groupe ECES : prédire la survie des passagers du Titanic.
+Il comprend un modèle de classification (scikit-learn), une API FastAPI et une application Streamlit.
+
+## Structure du dépôt
+
+| Dossier | Rôle |
+|---|---|
+| `data/` | jeu de données `titanic.csv` |
+| `src/` | code partagé : config, données, entraînement, prédiction, évaluation |
+| `models/` | modèle sauvegardé (`titanic_model.joblib`) |
+| `reports/` | graphiques et résultats |
+| `tests/` | tests pytest |
+| `notebooks/` | exploration |
+| `streamlit_app/` | application Streamlit |
+| `api/` | API FastAPI |
+| `scripts/` | scripts utilitaires (faux modèle de départ) |
+
+## Installation
+
+```bash
+git clone <url-du-depot>
+cd Titanic_Project
+uv sync
+```
+
+## Commandes
+
+```bash
+uv run python -m src.train                 # entraîner le modèle
+uv run uvicorn api.main:app --reload       # lancer l'API
+uv run streamlit run streamlit_app/app.py  # lancer l'application
+uv run pytest                              # lancer les tests
+```
+
+> `src.train`, l'API et l'application Streamlit n'existeront qu'après la fusion des branches des membres.
+> Le modèle présent au départ est un faux modèle, à remplacer.
+
+## Qui fait quoi
+
+| Membre | Rôle | Fichiers / livrables |
+|---|---|---|
+| Membre 1 | Données | `src/data.py`, exploration, graphiques |
+| Membre 2 | Modèle | `src/train.py`, 3 modèles comparés en validation croisée |
+| Membre 3 | Évaluation | `src/evaluate.py`, métriques, matrice de confusion |
+| Membre 4 | Joblib, tests, documentation | Joblib, tests, `INSTALL.md` |
+| Membre 5 | Application Streamlit | `streamlit_app/app.py` |
+| Membre 6 | API FastAPI | `api/main.py` |
+
+Détail de ce que chaque membre reçoit et livre : docs/FEUILLE_DE_ROUTE.md
+
+Ordre de fusion sur main : données, modèle, Joblib, évaluation, API, Streamlit. Gel du code vendredi soir.
