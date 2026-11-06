@@ -1,83 +1,83 @@
-# Titanic_Project
+# Titanic Survival Predictor
 
-Projet de groupe ECES : prédire la survie des passagers du Titanic (classification binaire, variable cible `Survived`).
-Il comprend un modèle de classification (scikit-learn), une API FastAPI et une application Streamlit.
+Une IA qui estime les chances de survie d'un passager du Titanic à partir de sa fiche : classe, sexe, âge, famille à bord, prix du billet, port d'embarquement. Le tout est livré de deux façons : une **application web** pour essayer en quelques clics, et une **API** pour l'intégrer dans d'autres outils.
 
-## Structure du dépôt
+Projet de groupe réalisé à l'ECES par six personnes, une branche chacune.
 
-| Dossier | Rôle |
-|---|---|
-| `data/` | jeu de données `titanic.csv` (891 passagers) |
-| `src/` | code partagé : config, données, entraînement, prédiction, évaluation |
-| `models/` | modèle sauvegardé (`titanic_model.joblib`) |
-| `reports/` | métriques, matrice de confusion, courbe ROC, interprétation |
-| `tests/` | tests pytest |
-| `notebooks/` | exploration des données (`eda.ipynb`) |
-| `streamlit_app/` | application Streamlit |
-| `api/` | API FastAPI |
-| `scripts/` | scripts utilitaires |
-| `docs/` | feuille de route du projet |
-
-## Installation
+## Démo en 2 minutes
 
 ```bash
-git clone <url-du-depot>
+git clone https://github.com/clanemondzali-04/Titanic_Project.git
 cd Titanic_Project
 uv sync
+uv run streamlit run streamlit_app/app.py
 ```
 
-Python 3.12 et [uv](https://docs.astral.sh/uv/) sont nécessaires. Aucune autre installation n'est requise.
+L'application s'ouvre sur http://localhost:8501 : on renseigne un passager, on clique sur **Prédire**, on obtient « Survivant » ou « Non-survivant » avec la probabilité. Il faut seulement Python 3.12 et [uv](https://docs.astral.sh/uv/).
 
-## Commandes
+## Ce que ça donne
+
+Le modèle (un arbre de décision) a été testé sur **179 passagers qu'il n'avait jamais vus** :
+
+| Indicateur | Résultat | En clair |
+|---|---|---|
+| Exactitude | 77 % | trois prédictions sur quatre sont justes |
+| Précision | 75 % | quand il annonce un survivant, il a raison 3 fois sur 4 |
+| Décès repérés | 88 % | il identifie presque tous les passagers décédés |
+| Survivants repérés (rappel) | 58 % | c'est sa limite : il en manque environ 4 sur 10 |
+
+Pendant l'entraînement, le même modèle atteignait environ 80 % en validation croisée : l'écart avec le test reste modéré, le modèle généralise correctement. Quatre modèles ont été comparés (régression logistique, arbre de décision, forêt aléatoire, KNN) et le meilleur a été retenu. Analyse complète, matrice de confusion et courbe ROC dans [`reports/`](reports/).
+
+## Comment c'est construit
+
+- **Données** : 891 passagers ([`data/titanic.csv`](data/titanic.csv)), explorés dans le notebook [`notebooks/eda.ipynb`](notebooks/eda.ipynb).
+- **Modèle** : un pipeline scikit-learn qui intègre la préparation des données (valeurs manquantes, encodage, mise à l'échelle) et le modèle. Il est sauvegardé d'un seul bloc : l'application et l'API reçoivent donc des valeurs brutes, sans retraitement.
+- **Application** : Streamlit, formulaire en français.
+- **API** : FastAPI, avec validation des entrées.
+
+### Utiliser l'API
 
 ```bash
-uv run python -m src.train                 # entraîner les modèles et sauvegarder le meilleur
-uv run python -m src.evaluate              # évaluer le modèle sur le jeu de test
-uv run uvicorn api.main:app --reload       # lancer l'API (http://localhost:8000/docs)
-uv run streamlit run streamlit_app/app.py  # lancer l'application (http://localhost:8501)
-uv run pytest                              # lancer les tests
+uv run uvicorn api.main:app
 ```
 
-## Démarche
-
-**Préparation des données.** Elle est intégrée dans le pipeline scikit-learn de `src/train.py` : âge manquant remplacé par la médiane, port manquant par la valeur la plus fréquente, sexe et port encodés en 0/1, variables numériques mises à l'échelle. Les statistiques sont calculées sur le seul jeu d'entraînement, pour éviter toute fuite d'information vers le test. Le notebook `notebooks/eda.ipynb` explore les données et justifie ces choix.
-
-**Modèle.** Quatre modèles sont comparés par validation croisée stratifiée à 5 plis sur le jeu d'entraînement : régression logistique, arbre de décision, forêt aléatoire et KNN. Le meilleur, un arbre de décision de profondeur 5, est sauvegardé avec Joblib. Le pipeline complet (préparation et modèle) est sauvegardé ensemble : l'API et l'application acceptent donc des valeurs brutes.
-
-**Découpage.** 80 % entraînement, 20 % test, stratifié, `random_state = 42`. Le jeu de test n'est utilisé qu'à l'évaluation.
-
-## Résultats
-
-Validation croisée (entraînement) : exactitude d'environ **80,3 %**. Évaluation sur le jeu de test (179 passagers) :
-
-| Exactitude | Précision | Rappel | F1 | ROC AUC |
-|---|---|---|---|---|
-| 76,5 % | 75,5 % | 58,0 % | 65,6 % | 79,7 % |
-
-Matrice de confusion : 97 décédés bien classés, 13 faux survivants, 29 survivants manqués, 40 survivants bien classés. Le point faible du modèle est le rappel : il détecte environ 58 % des survivants. L'écart entre validation croisée et test (environ 3,8 points) reste modéré. Détails dans `reports/interpretation.md`.
-
-## API
-
-- `GET /health` : vérifie que le modèle est chargé.
-- `POST /predict` : prédit la survie d'un passager.
-
-Exemple de requête :
+Documentation interactive sur http://localhost:8000/docs. Exemple de requête `POST /predict` :
 
 ```json
 {"pclass": 1, "sex": "female", "age": 29, "sibsp": 0, "parch": 0, "fare": 100, "embarked": "C"}
 ```
 
-Réponse : `{"survived": true, "probability": 1.0}`. L'âge est facultatif (`null` accepté). Les valeurs invalides renvoient une erreur 422.
+Réponse : `{"survived": true, "probability": 1.0}`. L'âge est facultatif, les valeurs invalides renvoient une erreur 422, et `GET /health` indique que le modèle est chargé.
 
-## Qui fait quoi
+## L'équipe
 
-| Membre | Rôle | Fichiers / livrables |
-|---|---|---|
-| Membre 1 | Données | `notebooks/eda.ipynb` (exploration et choix de préparation) |
-| Membre 2 | Modèle | `src/train.py`, 4 modèles comparés en validation croisée |
-| Membre 3 | Évaluation | `src/evaluate.py`, métriques, matrice de confusion, courbe ROC, `reports/interpretation.md` |
-| Membre 4 | Joblib, tests | test de sauvegarde et rechargement du modèle (`tests/test_base.py`) |
-| Membre 5 | Application Streamlit | `streamlit_app/app.py` |
-| Membre 6 | API FastAPI | `api/main.py`, `tests/test_api.py` |
+| Qui | Rôle | Livrables | Branche |
+|---|---|---|---|
+| **Clane MONDZALI** | Cheffe de groupe, modèle | `src/train.py` : comparaison de 4 modèles, sauvegarde du meilleur | `MONDZALI_Clane/features/membre-2-model` |
+| **Violette KONDA** | Exploration des données | `notebooks/eda.ipynb` : analyse et justification des choix de préparation | `features/Violette/membre-1-Traitement` |
+| **Naura MABIALA** | Évaluation | `src/evaluate.py`, métriques, matrice de confusion, courbe ROC, `reports/interpretation.md` | `features/nauramabiala/membre-3-evaluation` |
+| **Exaucé AYAMAR** | Sauvegarde du modèle et tests | test de sauvegarde et de rechargement du modèle | `Exaucé/membre-4/serialisation` |
+| **Yann OPENDA** | Initialisation du dépôt, application web | structure du projet, `streamlit_app/app.py` | `features/yann-openda/membre-5-streamlit` |
+| **Rich MASSOUKOU** | API | `api/main.py`, `tests/test_api.py` | `features/Rich-Massoukou/membre-6-FastApi` |
 
-Détail de ce que chaque membre reçoit et livre : `docs/FEUILLE_DE_ROUTE.md`
+Chacun a travaillé sur sa propre branche, puis tout a été réuni dans `main`. Dans l'historique Git, certains commits apparaissent sous des pseudos : KVS (Violette), NH (Naura), exauxoxo (Exaucé), clanemondzali-04 (Clane).
+
+## Pour les développeurs
+
+```bash
+uv run python -m src.train      # entraîner les modèles et sauvegarder le meilleur
+uv run python -m src.evaluate   # évaluer le modèle sur le jeu de test
+uv run pytest                   # lancer les 11 tests
+```
+
+| Dossier | Contenu |
+|---|---|
+| `src/` | code partagé : config, données, entraînement, prédiction, évaluation |
+| `models/` | modèle sauvegardé (`titanic_model.joblib`) |
+| `api/` | API FastAPI |
+| `streamlit_app/` | application Streamlit |
+| `notebooks/` | exploration des données |
+| `reports/` | métriques et graphiques |
+| `tests/` | tests automatiques |
+| `docs/` | feuille de route de l'équipe |
+| `scripts/` | scripts utilitaires |
