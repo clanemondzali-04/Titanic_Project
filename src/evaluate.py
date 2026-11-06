@@ -23,6 +23,12 @@ MODEL_PATH = BASE_DIR / "models" / "titanic_model.joblib"
 
 RESULTS_DIR = BASE_DIR / "results"
 
+# Vérification de l'existence du modèle
+if not MODEL_PATH.exists():
+    raise FileNotFoundError(
+        f"Modèle introuvable : {MODEL_PATH}"
+    )
+
 RESULTS_DIR.mkdir(exist_ok=True)
 
 # 2. Fonction d'évaluation
@@ -101,7 +107,7 @@ def evaluate(model, X_test, y_test, model_name="Titanic"):
     plt.tight_layout()
 
     plt.savefig(
-        RESULTS_DIR / "confusion_matrix.png",
+       RESULTS_DIR / f"confusion_matrix_{model_name}.png",
         dpi=300
     )
 
@@ -118,7 +124,7 @@ def evaluate(model, X_test, y_test, model_name="Titanic"):
     plt.tight_layout()
 
     plt.savefig(
-        RESULTS_DIR / "roc_curve.png",
+        RESULTS_DIR / f"roc_curve_{model_name}.png",
         dpi=300
     )
 
