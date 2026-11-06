@@ -77,7 +77,13 @@ Par ailleurs, l'Accuracy de 76,54 % indique qu'environ 23,46 % des prédictions 
 
 Ces résultats montrent que le modèle peut encore être amélioré, notamment en travaillant sur la capacité à identifier les survivants.
 
-## 5. Conclusion générale
+## 5. bis. Comparaison validation croisée et test
+
+Les modèles ont été comparés par validation croisée stratifiée à 5 plis sur le seul jeu d'entraînement. L'arbre de décision retenu y obtient une exactitude moyenne d'environ **80,3 %**. Sur le jeu de test, resté intact jusqu'à l'évaluation, il obtient **76,5 %**, soit un écart d'environ **3,8 points**.
+
+Cet écart reste modéré : le script d'évaluation le classe en « stabilité acceptable ». Il s'explique en partie par le hasard du découpage, le jeu de test ne comptant que 179 passagers, donc quelques passagers en plus ou en moins changent l'exactitude de façon visible. Il peut aussi traduire un léger surapprentissage de l'arbre de décision, qui s'ajuste un peu mieux aux données d'entraînement qu'à de nouveaux passagers. Le modèle généralise donc correctement, sans que les performances annoncées en validation croisée soient tout à fait retrouvées sur le test.
+
+## 6. Conclusion générale
 
 L'évaluation du modèle Titanic montre des performances globalement satisfaisantes, avec une Accuracy de 76,54 % et un ROC-AUC de 79,71 %.
 
