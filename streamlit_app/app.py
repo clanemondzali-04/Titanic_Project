@@ -40,7 +40,7 @@ sex = st.selectbox("Sexe", config.SEX_VALUES, format_func=LIBELLES_SEXE.get)
 
 age_inconnu = st.checkbox("Âge inconnu")
 age_saisi = st.number_input(
-    "Âge", min_value=0.0, max_value=100.0, value=30.0, step=1.0,
+    "Âge", min_value=0.0, max_value=100.0, value=30.0, step=1.0, format="%g",
     disabled=age_inconnu,  # grisé si l'âge est inconnu
 )
 
